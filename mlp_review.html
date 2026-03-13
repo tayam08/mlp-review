@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>금융공학 기초개념 정리</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4f6f9;
+      color: #333;
+    }
+
+    header {
+      background: #1a1a2e;
+      color: white;
+      padding: 40px 60px;
+    }
+
+    header h1 { font-size: 2rem; font-weight: 700; }
+    header p  { margin-top: 8px; color: #aaa; font-size: 0.95rem; }
+
+    /* 탭 네비게이션 */
+    .tab-nav {
+      background: #13132a;
+      display: flex;
+      padding: 0 60px;
+      border-bottom: 2px solid rgba(79,142,247,0.15);
+    }
+
+    .tab-btn {
+      padding: 16px 28px;
+      background: none;
+      border: none;
+      color: #7d8590;
+      font-size: 0.92rem;
+      font-family: 'Segoe UI', sans-serif;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .tab-btn:hover { color: #cdd9e5; }
+
+    .tab-btn.active {
+      color: #e6edf3;
+      border-bottom-color: #4f8ef7;
+      font-weight: 600;
+    }
+
+    /* 페이지 전환 */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    main {
+      max-width: 960px;
+      margin: 50px auto;
+      padding: 0 20px;
+    }
+
+    .section-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #1a1a2e;
+      border-left: 5px solid #4f8ef7;
+      padding-left: 14px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 28px 32px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+    }
+
+    .card h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #4f8ef7;
+      margin-bottom: 12px;
+    }
+
+    .card p  { font-size: 0.95rem; line-height: 1.8; color: #555; }
+    .card ul { margin-top: 10px; padding-left: 20px; }
+    .card ul li { font-size: 0.95rem; line-height: 1.9; color: #555; }
+
+    /* MLP 가로 레이아웃 */
+    .mlp-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    /* 수식 이탤릭 */
+    em.expr {
+      font-style: italic;
+      font-family: 'Consolas', monospace;
+      color: #4f8ef7;
+      background: rgba(79,142,247,0.08);
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+
+    /* 코드 블록 */
+    pre {
+      background: #0d1117;
+      color: #e6edf3;
+      border-radius: 8px;
+      padding: 20px 24px;
+      font-family: 'Consolas', monospace;
+      font-size: 0.88rem;
+      line-height: 1.7;
+      overflow-x: auto;
+      margin-top: 16px;
+    }
+
+    .kw { color: #ff7b72; }
+    .fn { color: #d2a8ff; }
+    .cm { color: #8b949e; }
+    .nm { color: #79c0ff; }
+    .op { color: #ffa657; }
+
+    /* 값 입력 패널 */
+    .input-panel {
+      background: white;
+      border-radius: 12px;
+      padding: 24px 32px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      flex-wrap: wrap;
+    }
+
+    .input-panel label {
+      font-family: 'Consolas', monospace;
+      font-size: 0.95rem;
+      color: #555;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .input-panel input[type="number"] {
+      width: 72px;
+      padding: 8px 10px;
+      border: 2px solid rgba(79,142,247,0.3);
+      border-radius: 8px;
+      font-family: 'Consolas', monospace;
+      font-size: 0.95rem;
+      color: #1a1a2e;
+      background: #f4f6f9;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .input-panel input[type="number"]:focus {
+      border-color: #4f8ef7;
+      background: white;
+    }
+
+    .btn-apply {
+      padding: 10px 24px;
+      background: #4f8ef7;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-left: auto;
+    }
+
+    .btn-apply:hover { background: #3a7be0; }
+
+    /* Step 시각화 */
+    .graph-wrap { overflow-x: auto; margin-top: 20px; }
+
+    .graph {
+      display: flex;
+      align-items: center;
+      min-width: 560px;
+    }
+
+    .node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .node-box {
+      background: #1a1a2e;
+      color: #e6edf3;
+      border: 2px solid #4f8ef7;
+      border-radius: 10px;
+      padding: 10px 18px;
+      text-align: center;
+      font-family: 'Consolas', monospace;
+      font-size: 0.9rem;
+      transition: all 0.25s ease;
+      min-width: 80px;
+    }
+
+    .node-box:hover { background: #4f8ef7; color: white; }
+    .node-label { font-size: 0.78rem; color: #888; }
+
+    .node-grad {
+      font-size: 0.75rem;
+      color: #f78166;
+      font-family: 'Consolas', monospace;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .node-grad.visible { opacity: 1; }
+
+    .arrow { color: #4f8ef7; font-size: 1.4rem; padding: 0 6px; }
+
+    .op-node {
+      background: #2a1f3d;
+      border: 2px solid #d2a8ff;
+      color: #d2a8ff;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    .btn-run {
+      margin-top: 20px;
+      padding: 10px 28px;
+      background: #4f8ef7;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-run:hover { background: #3a7be0; }
+
+    .step-log {
+      margin-top: 16px;
+      background: #0d1117;
+      border-radius: 8px;
+      padding: 16px 20px;
+      font-family: 'Consolas', monospace;
+      font-size: 0.85rem;
+      color: #8b949e;
+      min-height: 60px;
+      line-height: 1.8;
+    }
+
+    .step-log .log-line { color: #e6edf3; }
+    .step-log .log-grad { color: #f78166; }
+
+    /* SVG DAG */
+    .svg-dag-wrap {
+      margin-top: 28px;
+      background: #0d1117;
+      border-radius: 10px;
+      padding: 20px 24px;
+    }
+
+    .svg-dag-wrap p {
+      font-family: 'Consolas', monospace;
+      font-size: 0.82rem;
+      color: #8b949e;
+      margin-bottom: 12px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 30px;
+      color: #aaa;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>금융공학 기초개념 정리</h1>
+    <p>Multi-Layer Perception &amp; Micrograd</p>
+  </header>
+
+  <nav class="tab-nav">
+    <button class="tab-btn active" onclick="switchTab('mlp', this)">1. Multi-Layer Perceptron</button>
+    <button class="tab-btn" onclick="switchTab('micrograd', this)">2. Micrograd</button>
+    <button class="tab-btn" onclick="switchTab('graph', this)">3. 계산 그래프 시각화</button>
+  </nav>
+
+  <main>
+
+    <!-- ── Page 1: MLP ── -->
+    <div id="page-mlp" class="page active">
+      <h2 class="section-title">Multi-Layer Perceptron (MLP)</h2>
+      <div class="mlp-grid">
+
+        <div class="card">
+          <h3>Neuron (뉴런)</h3>
+          <p>MLP의 기본 연산 단위. 생물학적 뉴런을 수학적으로 모델링함.</p>
+          <ul>
+            <li>여러 입력값 <em>x</em>에 가중치 <em>w</em>를 각각 곱함</li>
+            <li>가중합(weighted sum)에 편향(bias) 가산</li>
+            <li>활성화 함수를 통해 최종 출력값 결정</li>
+            <li>대표 활성화 함수: Sigmoid, ReLU, Tanh</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>학습 메커니즘</h3>
+          <p>가중치 최적화를 위해 아래 과정 반복.</p>
+          <ul>
+            <li><strong>순전파</strong>: 입력층 → 은닉층 → 출력층 순 계산, 예측값 생성</li>
+            <li><strong>손실 함수</strong>: 예측값·실제값 오차 수치화 (MSE, Cross-Entropy)</li>
+            <li><strong>역전파</strong>: 오차를 출력층 → 입력층 방향 전달, 기울기 계산</li>
+            <li><strong>경사하강법</strong>: 기울기로 가중치 업데이트, 손실 최소화</li>
+          </ul>
+        </div>
+
+      </div>
+    </div><!-- /page-mlp -->
+
+
+    <!-- ── Page 2: Micrograd ── -->
+    <div id="page-micrograd" class="page">
+      <h2 class="section-title">Micrograd</h2>
+
+      <div class="card">
+        <h3>Gradient (기울기)</h3>
+        <p>
+          어떤 값이 출력(Loss)에 미치는 영향의 크기.
+          <em class="expr">dL/dx</em> 로 표현하며,
+          값이 클수록 <em class="expr">x</em>의 미소 변화가 Loss에 큰 영향을 줌.
+        </p>
+        <pre><span class="kw">class</span> <span class="fn">Value</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="op">self</span>, data):
+        <span class="op">self</span>.data = data
+        <span class="op">self</span>.grad = <span class="nm">0.0</span>        <span class="cm"># dL/d(self), 초기값 0</span>
+        <span class="op">self</span>._backward = <span class="kw">lambda</span>: <span class="kw">None</span>
+
+    <span class="kw">def</span> <span class="fn">__mul__</span>(<span class="op">self</span>, other):
+        out = <span class="fn">Value</span>(<span class="op">self</span>.data * other.data)
+
+        <span class="kw">def</span> <span class="fn">_backward</span>():
+            <span class="cm"># d(out)/d(self) = other.data</span>
+            <span class="op">self</span>.grad  += other.data * out.grad
+            other.grad += <span class="op">self</span>.data  * out.grad
+
+        out._backward = _backward
+        <span class="kw">return</span> out</pre>
+      </div>
+
+      <div class="card">
+        <h3>Chain Rule (연쇄 법칙)</h3>
+        <p>여러 연산이 연결될 때 각 단계의 기울기를 <strong>곱하여</strong> 전체 기울기 산출.</p>
+        <p style="margin-top:10px;">
+          <em class="expr">L = f(g(x))</em> 일 때 &nbsp;→&nbsp;
+          <em class="expr">dL/dx = (dL/df) &times; (df/dg) &times; (dg/dx)</em>
+        </p>
+        <pre><span class="cm"># z = x * w,  L = z * b</span>
+x = <span class="fn">Value</span>(<span class="nm">2.0</span>)
+w = <span class="fn">Value</span>(<span class="nm">3.0</span>)
+b = <span class="fn">Value</span>(<span class="nm">4.0</span>)
+
+z = x * w       <span class="cm"># z.data = 6.0</span>
+L = z * b       <span class="cm"># L.data = 24.0</span>
+
+L.grad = <span class="nm">1.0</span>   <span class="cm"># 출력 기준점 설정</span>
+L._backward()   <span class="cm"># dL/dz = b = 4.0,  dL/db = z = 6.0</span>
+z._backward()   <span class="cm"># dL/dx = dL/dz * w = 4 * 3 = 12.0</span>
+               <span class="cm"># dL/dw = dL/dz * x = 4 * 2 = 8.0</span></pre>
+      </div>
+
+    </div><!-- /page-micrograd -->
+
+
+    <!-- ── Page 3: 계산 그래프 ── -->
+    <div id="page-graph" class="page">
+      <h2 class="section-title">계산 그래프 시각화 &mdash; <em class="expr">L = (x &times; w) &times; b</em></h2>
+
+      <!-- 값 입력 패널 -->
+      <div class="input-panel">
+        <label>x <input type="number" id="inp-x" value="2" step="0.1"></label>
+        <label>w <input type="number" id="inp-w" value="3" step="0.1"></label>
+        <label>b <input type="number" id="inp-b" value="4" step="0.1"></label>
+        <button class="btn-apply" onclick="applyValues()">적용 &amp; 초기화</button>
+      </div>
+
+      <div class="card">
+        <p>단계 실행 버튼으로 순전파 → 역전파 과정을 순서별 확인.</p>
+
+        <!-- Step 흐름 시각화 -->
+        <div class="graph-wrap">
+          <div class="graph">
+            <div class="node">
+              <div class="node-box" id="node-x">x = 2</div>
+              <div class="node-label">x</div>
+              <div class="node-grad" id="gx">grad = <span id="gx-val">0</span></div>
+            </div>
+            <div class="arrow">→</div>
+            <div class="op-node">×</div>
+            <div class="arrow">→</div>
+            <div class="node">
+              <div class="node-box" id="node-z">z = ?</div>
+              <div class="node-label">z = x·w</div>
+              <div class="node-grad" id="gz">grad = <span id="gz-val">0</span></div>
+            </div>
+            <div class="arrow">→</div>
+            <div class="op-node">×</div>
+            <div class="arrow">→</div>
+            <div class="node">
+              <div class="node-box" id="node-L">L = ?</div>
+              <div class="node-label">L = z·b</div>
+              <div class="node-grad" id="gL">grad = <span id="gL-val">0</span></div>
+            </div>
+          </div>
+          <div style="margin-top:8px; display:flex; gap:24px; font-size:0.82rem; color:#888; font-family:Consolas,monospace;">
+            <span id="label-w">w = 3</span>
+            <span id="label-b">b = 4</span>
+          </div>
+        </div>
+
+        <button class="btn-run" onclick="runGraph()">단계 실행</button>
+        <button class="btn-run" style="background:#444; margin-left:8px;" onclick="resetGraph()">초기화</button>
+        <div class="step-log" id="log">값 입력 후 [적용 &amp; 초기화], 그 다음 단계 실행을 누르세요.</div>
+
+        <!-- SVG DAG -->
+        <div class="svg-dag-wrap">
+          <p>// DAG — 노드: 값, 엣지: 순전파(파랑) / 역전파 gradient(빨강)</p>
+          <svg id="dag" width="100%" viewBox="0 0 660 260" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <marker id="arr-fwd" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                <polygon points="0 0, 8 3, 0 6" fill="#4f8ef7"/>
+              </marker>
+              <marker id="arr-bwd" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                <polygon points="0 0, 8 3, 0 6" fill="#f78166"/>
+              </marker>
+            </defs>
+
+            <!-- 순전파 엣지 -->
+            <line x1="90" y1="52"  x2="198" y2="108" stroke="#4f8ef7" stroke-width="1.5" marker-end="url(#arr-fwd)" opacity="0.5"/>
+            <line x1="90" y1="167" x2="198" y2="122" stroke="#4f8ef7" stroke-width="1.5" marker-end="url(#arr-fwd)" opacity="0.5"/>
+            <line x1="242" y1="115" x2="278" y2="115" stroke="#4f8ef7" stroke-width="1.5" marker-end="url(#arr-fwd)" opacity="0.5"/>
+            <line x1="368" y1="115" x2="428" y2="153" stroke="#4f8ef7" stroke-width="1.5" marker-end="url(#arr-fwd)" opacity="0.5"/>
+            <line x1="368" y1="220" x2="428" y2="167" stroke="#4f8ef7" stroke-width="1.5" marker-end="url(#arr-fwd)" opacity="0.5"/>
+            <line x1="472" y1="160" x2="510" y2="160" stroke="#4f8ef7" stroke-width="1.5" marker-end="url(#arr-fwd)" opacity="0.5"/>
+
+            <!-- 역전파 엣지 (초기 hidden) -->
+            <line id="bwd-Lz" x1="510" y1="155" x2="472" y2="155" stroke="#f78166" stroke-width="1.5" marker-end="url(#arr-bwd)" opacity="0"/>
+            <line id="bwd-zx" x1="278" y1="110" x2="198" y2="110" stroke="#f78166" stroke-width="1.5" marker-end="url(#arr-bwd)" opacity="0"/>
+
+            <!-- x -->
+            <rect id="svgn-x" x="10" y="27" width="80" height="50" rx="8" fill="#1a1a2e" stroke="#4f8ef7" stroke-width="2"/>
+            <text id="svgv-x" x="50" y="50" text-anchor="middle" fill="#e6edf3" font-family="Consolas" font-size="14">x = 2</text>
+            <text id="svgg-x" x="50" y="68" text-anchor="middle" fill="#f78166" font-family="Consolas" font-size="11" opacity="0">grad=0</text>
+
+            <!-- w -->
+            <rect id="svgn-w" x="10" y="142" width="80" height="50" rx="8" fill="#1a1a2e" stroke="#4f8ef7" stroke-width="2"/>
+            <text id="svgv-w" x="50" y="165" text-anchor="middle" fill="#e6edf3" font-family="Consolas" font-size="14">w = 3</text>
+            <text id="svgg-w" x="50" y="183" text-anchor="middle" fill="#f78166" font-family="Consolas" font-size="11" opacity="0">grad=0</text>
+
+            <!-- b -->
+            <rect id="svgn-b" x="278" y="195" width="90" height="50" rx="8" fill="#1a1a2e" stroke="#4f8ef7" stroke-width="2"/>
+            <text id="svgv-b" x="323" y="218" text-anchor="middle" fill="#e6edf3" font-family="Consolas" font-size="14">b = 4</text>
+            <text id="svgg-b" x="323" y="236" text-anchor="middle" fill="#f78166" font-family="Consolas" font-size="11" opacity="0">grad=0</text>
+
+            <!-- mul1 -->
+            <circle cx="220" cy="115" r="22" fill="#2a1f3d" stroke="#d2a8ff" stroke-width="2"/>
+            <text x="220" y="121" text-anchor="middle" fill="#d2a8ff" font-family="Consolas" font-size="18" font-weight="bold">×</text>
+
+            <!-- z -->
+            <rect id="svgn-z" x="278" y="90" width="90" height="50" rx="8" fill="#1a1a2e" stroke="#4f8ef7" stroke-width="2"/>
+            <text id="svgv-z" x="323" y="113" text-anchor="middle" fill="#e6edf3" font-family="Consolas" font-size="14">z = ?</text>
+            <text id="svgg-z" x="323" y="131" text-anchor="middle" fill="#f78166" font-family="Consolas" font-size="11" opacity="0">grad=0</text>
+
+            <!-- mul2 -->
+            <circle cx="450" cy="160" r="22" fill="#2a1f3d" stroke="#d2a8ff" stroke-width="2"/>
+            <text x="450" y="166" text-anchor="middle" fill="#d2a8ff" font-family="Consolas" font-size="18" font-weight="bold">×</text>
+
+            <!-- L -->
+            <rect id="svgn-L" x="510" y="135" width="80" height="50" rx="8" fill="#1a1a2e" stroke="#4f8ef7" stroke-width="2"/>
+            <text id="svgv-L" x="550" y="158" text-anchor="middle" fill="#e6edf3" font-family="Consolas" font-size="14">L = ?</text>
+            <text id="svgg-L" x="550" y="176" text-anchor="middle" fill="#f78166" font-family="Consolas" font-size="11" opacity="0">grad=0</text>
+          </svg>
+        </div>
+
+      </div>
+    </div><!-- /page-graph -->
+
+  </main>
+
+  <script>
+    /* ── 탭 전환 ── */
+    function switchTab(name, btn) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('page-' + name).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    /* ── 계산 그래프 상태 ── */
+    let xv = 2, wv = 3, bv = 4;
+    let step = 0;
+
+    /* 값 적용 */
+    function applyValues() {
+      xv = parseFloat(document.getElementById('inp-x').value) || 0;
+      wv = parseFloat(document.getElementById('inp-w').value) || 0;
+      bv = parseFloat(document.getElementById('inp-b').value) || 0;
+
+      // 레이블 업데이트
+      document.getElementById('node-x').textContent = `x = ${xv}`;
+      document.getElementById('label-w').textContent = `w = ${wv}`;
+      document.getElementById('label-b').textContent = `b = ${bv}`;
+      document.getElementById('svgv-x').textContent = `x = ${xv}`;
+      document.getElementById('svgv-w').textContent = `w = ${wv}`;
+      document.getElementById('svgv-b').textContent = `b = ${bv}`;
+
+      resetGraph();
+    }
+
+    /* SVG 헬퍼 */
+    function svgGrad(id, text) {
+      const el = document.getElementById(id);
+      el.textContent = text;
+      el.setAttribute('opacity', '1');
+    }
+
+    function svgHighlight(id) {
+      document.getElementById(id).setAttribute('stroke', '#f78166');
+    }
+
+    function svgEdge(id, show) {
+      document.getElementById(id).setAttribute('opacity', show ? '1' : '0');
+    }
+
+    function log(html) {
+      document.getElementById('log').innerHTML = html;
+    }
+
+    function fmt(n) { return parseFloat(n.toFixed(4)); }
+
+    /* 단계 정의 */
+    function buildSteps() {
+      const z = xv * wv;
+      const L = z * bv;
+      const gz = bv;            // dL/dz = b
+      const gx = wv * bv;       // dL/dx = w * b
+      const gw = xv * bv;       // dL/dw = x * b
+      const gb = z;             // dL/db = z
+
+      return [
+        () => {
+          document.getElementById('node-z').textContent = `z = ${fmt(z)}`;
+          document.getElementById('svgv-z').textContent = `z = ${fmt(z)}`;
+          log(`<span class="log-line">[ 순전파 1 ]&nbsp; z = x × w = ${xv} × ${wv} = <b>${fmt(z)}</b></span>`);
+        },
+        () => {
+          document.getElementById('node-L').textContent = `L = ${fmt(L)}`;
+          document.getElementById('svgv-L').textContent = `L = ${fmt(L)}`;
+          log(`<span class="log-line">[ 순전파 2 ]&nbsp; L = z × b = ${fmt(z)} × ${bv} = <b>${fmt(L)}</b></span>`);
+        },
+        () => {
+          document.getElementById('gL-val').textContent = '1.0';
+          document.getElementById('gL').classList.add('visible');
+          svgGrad('svgg-L', 'grad=1.0');
+          svgHighlight('svgn-L');
+          log('<span class="log-grad">[ 역전파 0 ]&nbsp; L.grad = 1.0 &nbsp;(출력 기준점)</span>');
+        },
+        () => {
+          document.getElementById('gz-val').textContent = `${fmt(gz)}`;
+          document.getElementById('gz').classList.add('visible');
+          svgGrad('svgg-z', `grad=${fmt(gz)}`);
+          svgHighlight('svgn-z');
+          svgEdge('bwd-Lz', true);
+          log(`<span class="log-grad">[ 역전파 1 ]&nbsp; dL/dz = b = ${bv} &nbsp;→&nbsp; z.grad = 1 × ${bv} = <b>${fmt(gz)}</b></span>`);
+        },
+        () => {
+          document.getElementById('gx-val').textContent = `${fmt(gx)}`;
+          document.getElementById('gx').classList.add('visible');
+          svgGrad('svgg-x', `grad=${fmt(gx)}`);
+          svgGrad('svgg-w', `grad=${fmt(gw)}`);
+          svgGrad('svgg-b', `grad=${fmt(gb)}`);
+          svgHighlight('svgn-x');
+          svgHighlight('svgn-w');
+          svgHighlight('svgn-b');
+          svgEdge('bwd-zx', true);
+          log(
+            `<span class="log-grad">[ 역전파 2 ]&nbsp; dL/dx = z.grad × w = ${fmt(gz)} × ${wv} = <b>${fmt(gx)}</b></span><br>` +
+            `<span class="log-grad">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dL/dw = z.grad × x = ${fmt(gz)} × ${xv} = <b>${fmt(gw)}</b></span><br>` +
+            `<span class="log-grad">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dL/db = z = <b>${fmt(gb)}</b></span>`
+          );
+        }
+      ];
+    }
+
+    let steps = buildSteps();
+
+    function runGraph() {
+      if (step < steps.length) {
+        steps[step]();
+        step++;
+      } else {
+        log('<span class="log-line">모든 단계 완료. 초기화 버튼으로 재시작.</span>');
+      }
+    }
+
+    function resetGraph() {
+      step = 0;
+      steps = buildSteps();
+
+      document.getElementById('node-z').textContent = 'z = ?';
+      document.getElementById('node-L').textContent = 'L = ?';
+      document.getElementById('svgv-z').textContent = 'z = ?';
+      document.getElementById('svgv-L').textContent = 'L = ?';
+
+      ['gx','gz','gL'].forEach(id => document.getElementById(id).classList.remove('visible'));
+      ['gx-val','gz-val','gL-val'].forEach(id => { document.getElementById(id).textContent = '0'; });
+      ['svgg-x','svgg-w','svgg-b','svgg-z','svgg-L'].forEach(id => {
+        document.getElementById(id).setAttribute('opacity', '0');
+      });
+      ['svgn-x','svgn-w','svgn-b','svgn-z','svgn-L'].forEach(id => {
+        document.getElementById(id).setAttribute('stroke', '#4f8ef7');
+      });
+
+      svgEdge('bwd-Lz', false);
+      svgEdge('bwd-zx', false);
+
+      log('값 입력 후 [적용 &amp; 초기화], 그 다음 단계 실행을 누르세요.');
+    }
+  </script>
+
+  <footer>
+    Financial Engineering Review &copy; 2026
+  </footer>
+
+</body>
+</html>
