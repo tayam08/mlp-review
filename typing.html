@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>타자 연습</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: 'Noto Sans KR', sans-serif; }
+    textarea { font-family: 'Noto Sans KR', sans-serif; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.15} }
+    .cursor-blink { animation: blink 0.85s ease-in-out infinite; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+    .fade-in { animation: fadeIn 0.25s ease-out; }
+    .neon-border { box-shadow: 0 0 0 2px #22d3ee, 0 0 16px rgba(34,211,238,0.25); }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useMemo, useCallback } = React;
+
+    /* ════════════════════════════════════════════════════════════════
+       DATA — 한국어 / 영어  ×  하(easy) / 중(medium) / 상(hard)
+       각 20문장
+    ════════════════════════════════════════════════════════════════ */
+    const SENTENCES = {
+      ko: {
+        easy: [
+          "삶은 짧고 예술은 길다.",
+          "시작이 반이다.",
+          "천 리 길도 한 걸음부터.",
+          "인내는 쓰고 열매는 달다.",
+          "아는 것이 힘이다.",
+          "빛이 있으면 그림자도 있다.",
+          "행복은 나누면 두 배가 된다.",
+          "오늘의 나는 내가 만든다.",
+          "웃음은 최고의 보약이다.",
+          "내일은 내일의 해가 뜬다.",
+          "희망을 잃지 마라.",
+          "사랑은 모든 것을 이긴다.",
+          "배움에는 끝이 없다.",
+          "좋은 책은 좋은 친구다.",
+          "작은 것에 감사하라.",
+          "한 걸음씩 나아가면 된다.",
+          "꿈을 꾸는 자만이 날 수 있다.",
+          "포기하지 않으면 반드시 이긴다.",
+          "지금 이 순간이 가장 중요하다.",
+          "산은 산이요, 물은 물이로다.",
+        ],
+        medium: [
+          "인생은 가까이서 보면 비극이고, 멀리서 보면 희극이다.",
+          "오늘 할 수 있는 일을 내일로 미루지 말라.",
+          "가장 어두운 밤이 지나면 가장 밝은 아침이 온다.",
+          "나 보기가 역겨워 가실 때에는 말없이 고이 보내 드리오리다.",
+          "꿈을 꾸는 자만이 세상을 바꿀 수 있다.",
+          "강한 자가 살아남는 것이 아니라, 살아남은 자가 강한 것이다.",
+          "행복은 멀리 있지 않다. 우리 곁에 항상 함께하고 있다.",
+          "봄날은 간다, 꽃잎은 져 흩날리네. 그리운 그 이름을 불러보네.",
+          "우리가 알고 있는 사랑은 사실 그 사람의 일부일 뿐이다.",
+          "어디에서 무엇을 하고 있나요. 지금쯤 어디를 걷고 있나요.",
+          "행복하길 바라, 언제나 웃을 수 있기를. 너의 곁에 있어 줄게.",
+          "사람은 두 번 죽는다. 한 번은 숨이 끊어질 때, 한 번은 잊혀질 때.",
+          "아름다운 것은 언제나 슬픔을 데리고 온다.",
+          "우리는 서로를 통해 더 나은 사람이 된다.",
+          "나를 사랑해줘, 온 세상을 다 줄게. 너와 함께라면 두렵지 않아.",
+          "내 마음은 호수요, 그대 노 저어 오오.",
+          "그 많던 싱아는 누가 다 먹었을까. 그 쉽던 공부는 왜 그리 어려웠나.",
+          "지금 이 순간을 살아라. 과거는 이미 지나갔고 미래는 아직 오지 않았다.",
+          "나는 이 세상에서 가난하고 외롭고 높고 쓸쓸하니 살아가도록 태어났다.",
+          "당신이 할 수 있다고 생각하면 반드시 할 수 있다.",
+        ],
+        hard: [
+          "당신이 할 수 있다고 생각하면 할 수 있고, 할 수 없다고 생각하면 할 수 없다. 생각이 곧 현실이다.",
+          "인생의 가장 큰 영광은 한 번도 실패하지 않는 것이 아니라, 넘어질 때마다 다시 일어나는 것이다.",
+          "봄이 오면 꽃이 피고, 여름이 오면 초록이 무성하며, 가을이 오면 낙엽이 지고, 겨울이 오면 눈이 내린다.",
+          "사랑은 서로를 바라보는 것이 아니라, 함께 같은 방향을 바라보는 것이다. 그것이 진정한 동반자다.",
+          "이 세상에서 가장 아름다운 것은 볼 수도 없고 만질 수도 없다. 오직 마음으로만 느낄 수 있다.",
+          "한 인간의 삶은 수많은 선택들로 이루어진다. 그 선택들이 모여 지금의 당신을 만들었다.",
+          "두려움은 꿈을 향한 문 앞에 서 있는 경비원이다. 용기를 내어 그 문을 열어라. 기회는 기다려주지 않는다.",
+          "오늘 흘린 땀방울이 내일의 열매가 된다. 지금 이 순간의 노력을 소중히 여겨라.",
+          "세상은 당신이 생각하는 것보다 훨씬 더 넓고, 당신이 꿈꾸는 것보다 훨씬 더 아름답다.",
+          "진정한 친구란 내가 힘들 때 곁에 있어주는 사람이 아니라, 내가 틀렸을 때 말해줄 수 있는 사람이다.",
+          "지식은 배움으로 얻을 수 있지만, 지혜는 살아가면서 겪는 경험 속에서만 얻을 수 있다.",
+          "밤하늘의 별들처럼, 우리 각자는 저마다 빛을 내고 있다. 다만 서로가 빛이 되어줄 때 더 아름답다.",
+          "우리가 걷는 이 길은 누군가가 걸어온 길이기도 하고, 누군가가 걸어갈 길이기도 하다.",
+          "행복이란 특별한 순간에만 존재하는 것이 아니라, 평범한 일상의 작은 순간들 속에 깃들어 있다.",
+          "꿈꾸는 것을 두려워하지 마라. 진정한 실패는 꿈을 꾸지 않는 것에서 시작된다.",
+          "겨울이 길고 추울수록, 봄날의 따뜻함은 더욱 값지고 아름답게 느껴진다. 인내가 아름다움을 만든다.",
+          "삶이란 주어진 시간을 어떻게 채우느냐에 달려 있다. 매 순간을 의미 있게 살아가자.",
+          "서로 다른 색깔의 꽃들이 모여 아름다운 정원을 이루듯, 우리도 다름 속에서 조화를 찾을 수 있다.",
+          "진심으로 원하는 것이 있다면, 온 우주가 그것을 이루도록 도와준다고 한다.",
+          "우리는 하늘이 내린 사명을 가지고 태어난다. 그 사명이 무엇인지 발견하는 것이 삶의 여정이다.",
+        ],
+      },
+      en: {
+        easy: [
+          "Dream big, work hard.",
+          "Stay hungry, stay foolish.",
+          "Just do it.",
+          "Less is more.",
+          "Think different.",
+          "No pain, no gain.",
+          "Life is short.",
+          "Love conquers all.",
+          "To be or not to be.",
+          "Never give up.",
+          "Believe in yourself.",
+          "Keep it simple.",
+          "Make it happen.",
+          "Stay positive always.",
+          "Work hard in silence.",
+          "Be the change.",
+          "Carpe diem.",
+          "Time is money.",
+          "Every day is new.",
+          "Actions speak louder.",
+        ],
+        medium: [
+          "The only way to do great work is to love what you do.",
+          "In the middle of every difficulty lies opportunity.",
+          "Two roads diverged in a wood, and I took the one less traveled by.",
+          "It was the best of times, it was the worst of times.",
+          "All that glitters is not gold.",
+          "I have a dream that one day this nation will rise up.",
+          "Yesterday, all my troubles seemed so far away.",
+          "We are the champions, my friends, till the end.",
+          "Don't stop me now, I'm having such a good time.",
+          "With great power comes great responsibility.",
+          "Elementary, my dear Watson, the game is afoot.",
+          "It always seems impossible until it is done.",
+          "The journey of a thousand miles begins with a single step.",
+          "Not all those who wander are lost.",
+          "Do not go gentle into that good night.",
+          "Shoot for the moon. Even if you miss, land among the stars.",
+          "She loves you, yeah, yeah, yeah. She loves you and you know.",
+          "Success is not final, failure is not fatal. Courage counts.",
+          "It does not matter how slowly you go as long as you do not stop.",
+          "Staying alive, ah, ha, ha, ha, staying alive.",
+        ],
+        hard: [
+          "It was a bright cold day in April, and the clocks were striking thirteen when Winston slipped through the glass doors.",
+          "It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife.",
+          "To be yourself in a world that is constantly trying to make you something else is the greatest accomplishment.",
+          "Two things are infinite: the universe and human stupidity; and I'm not sure about the universe. Think about it.",
+          "In three words I can sum up everything I've learned about life: it goes on. And on. And on some more.",
+          "We accept the love we think we deserve. And we deserve so much more than we allow ourselves to receive.",
+          "I've learned that people will forget what you said and what you did, but they will never forget how you made them feel.",
+          "Twenty years from now you will be more disappointed by the things you didn't do than by the ones you did.",
+          "Go confidently in the direction of your dreams. Live the life you have imagined and never look back.",
+          "You miss one hundred percent of the shots you never take. So take the shot, miss, and take it again.",
+          "The most important thing is to enjoy your life, to be happy. It's all that matters in the end.",
+          "Life is what happens when you're busy making other plans. So stop planning and start living now.",
+          "Ask not what your country can do for you, ask what you can do for your country and for each other.",
+          "Not all those who wander are lost. The old that is strong does not wither, deep roots are not reached by frost.",
+          "We shall not cease from exploration, and the end of all our exploring will be to arrive where we started.",
+          "The truth will set you free, but first it will make you uncomfortable. Breathe, accept, and move forward.",
+          "You only live once, but if you do it right, once is enough. Make every single moment count.",
+          "The only limit to our realization of tomorrow will be our doubts of today. Act well at the present moment.",
+          "I am not afraid of storms, for I am learning how to sail my ship through them, one wave at a time.",
+          "Call me Ishmael. Some years ago, never mind how long precisely, I thought I would sail and see the world.",
+        ],
+      },
+    };
+
+    /* ════════════════════════════════════════════════════════════════
+       THEME  —  light(white/lime) | dark(black/neon-cyan)
+    ════════════════════════════════════════════════════════════════ */
+    const TH = {
+      light: {
+        page:         'bg-gray-50 text-gray-900',
+        header:       'bg-white border-b border-gray-100 shadow-sm',
+        card:         'bg-white border border-gray-100 shadow-sm',
+        text:         'text-gray-800',
+        textSub:      'text-gray-500',
+        textMuted:    'text-gray-300',
+        accent:       'text-lime-500',
+        accentBg:     'bg-lime-500 hover:bg-lime-600 active:bg-lime-700',
+        accentSoft:   'bg-lime-50 text-lime-700 border border-lime-200',
+        accentBar:    'bg-gradient-to-r from-lime-400 to-lime-500',
+        tabBg:        'bg-gray-100',
+        tabActive:    'bg-lime-500 text-white shadow-sm',
+        tabInactive:  'text-gray-500 hover:bg-gray-200',
+        diffActive:   'bg-lime-500 text-white shadow-sm',
+        diffInactive: 'text-gray-500 hover:bg-gray-200',
+        charCorrect:  'text-gray-700',
+        charWrong:    'bg-red-100 text-red-500 rounded px-0.5',
+        charCurrent:  'bg-lime-300 text-gray-900 rounded px-0.5 cursor-blink',
+        charUpcoming: 'text-gray-300',
+        inputField:   'border-gray-200 focus:border-lime-400 bg-white text-gray-800 placeholder-gray-300',
+        progressBg:   'bg-gray-100',
+        iconBtn:      'text-gray-400 hover:text-gray-700 hover:bg-gray-100',
+        divider:      'border-gray-100',
+        pauseOverlay: 'bg-white/85 backdrop-blur-sm',
+        rankHeader:   'bg-gray-50 text-gray-500',
+        rankRow:      'hover:bg-gray-50',
+        btnOutline:   'border border-gray-200 text-gray-600 hover:bg-gray-50',
+        btnDanger:    'text-red-400 hover:text-red-500',
+        periodActive: 'bg-lime-500 text-white',
+        periodInactive:'text-gray-500 hover:bg-gray-100',
+      },
+      dark: {
+        page:         'bg-[#09090f] text-gray-100',
+        header:       'bg-[#0f0f18] border-b border-gray-800',
+        card:         'bg-[#0f0f18] border border-gray-800',
+        text:         'text-gray-100',
+        textSub:      'text-gray-400',
+        textMuted:    'text-gray-600',
+        accent:       'text-cyan-400',
+        accentBg:     'bg-cyan-500 hover:bg-cyan-400 active:bg-cyan-600',
+        accentSoft:   'bg-cyan-950 text-cyan-400 border border-cyan-800',
+        accentBar:    'bg-gradient-to-r from-cyan-500 to-blue-500',
+        tabBg:        'bg-gray-800',
+        tabActive:    'bg-cyan-500 text-gray-950',
+        tabInactive:  'text-gray-400 hover:bg-gray-700',
+        diffActive:   'bg-cyan-500 text-gray-950',
+        diffInactive: 'text-gray-400 hover:bg-gray-700',
+        charCorrect:  'text-gray-300',
+        charWrong:    'bg-red-900/50 text-red-400 rounded px-0.5',
+        charCurrent:  'bg-cyan-400 text-gray-950 rounded px-0.5 cursor-blink',
+        charUpcoming: 'text-gray-600',
+        inputField:   'border-gray-700 focus:border-cyan-400 bg-[#09090f] text-gray-100 placeholder-gray-600',
+        progressBg:   'bg-gray-800',
+        iconBtn:      'text-gray-500 hover:text-gray-200 hover:bg-gray-800',
+        divider:      'border-gray-800',
+        pauseOverlay: 'bg-[#09090f]/85 backdrop-blur-sm',
+        rankHeader:   'bg-gray-900 text-gray-500',
+        rankRow:      'hover:bg-gray-800/60',
+        btnOutline:   'border border-gray-700 text-gray-400 hover:bg-gray-800',
+        btnDanger:    'text-red-500 hover:text-red-400',
+        periodActive: 'bg-cyan-500 text-gray-950',
+        periodInactive:'text-gray-500 hover:bg-gray-800',
+      },
+    };
+
+    /* ════════════════════════════════════════════════════════════════
+       AUDIO — Web Audio API mechanical click
+    ════════════════════════════════════════════════════════════════ */
+    let _audioCtx = null;
+    function getAudioCtx() {
+      if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      return _audioCtx;
+    }
+    function playClick() {
+      try {
+        const ctx = getAudioCtx();
+        if (ctx.state === 'suspended') ctx.resume();
+        const sr  = ctx.sampleRate;
+        const now = ctx.currentTime;
+
+        // ── Layer 1: 노이즈 클릭 본체 ──────────────────────────────
+        // 극도로 짧은 감쇠(2ms 시정수)로 "탁"의 어택감 생성
+        const nLen = Math.floor(sr * 0.020); // 20ms 버퍼
+        const nBuf = ctx.createBuffer(1, nLen, sr);
+        const nDat = nBuf.getChannelData(0);
+        for (let i = 0; i < nLen; i++) {
+          nDat[i] = (Math.random() * 2 - 1) * Math.exp(-i / (sr * 0.002));
+        }
+        const nSrc = ctx.createBufferSource();
+        nSrc.buffer = nBuf;
+
+        // 2500–5000 Hz 대역 강조 → 키보드 특유의 고음 클릭
+        const hpf = ctx.createBiquadFilter();
+        hpf.type = 'highpass'; hpf.frequency.value = 2500;
+
+        const nGain = ctx.createGain();
+        nGain.gain.setValueAtTime(1.1, now);
+        nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.018);
+
+        nSrc.connect(hpf); hpf.connect(nGain); nGain.connect(ctx.destination);
+        nSrc.start(now);
+
+        // ── Layer 2: pitch blip ────────────────────────────────────
+        // 짧은 피치 다운 글라이드 → "탁"의 바디감(톤)
+        const osc = ctx.createOscillator();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(900, now);
+        osc.frequency.exponentialRampToValueAtTime(140, now + 0.014);
+
+        const oGain = ctx.createGain();
+        oGain.gain.setValueAtTime(0.30, now);
+        oGain.gain.exponentialRampToValueAtTime(0.001, now + 0.014);
+
+        osc.connect(oGain); oGain.connect(ctx.destination);
+        osc.start(now); osc.stop(now + 0.015);
+      } catch (_) {}
+    }
+
+    /* ════════════════════════════════════════════════════════════════
+       RANKING  — localStorage
+    ════════════════════════════════════════════════════════════════ */
+    const LS_KEY = 'typing_v3_rankings';
+    function loadRecords() {
+      try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; }
+      catch { return []; }
+    }
+    function saveRecord(rec) {
+      const all = loadRecords();
+      all.push({ ...rec, id: Date.now(), ts: Date.now() });
+      if (all.length > 300) all.splice(0, all.length - 300);
+      localStorage.setItem(LS_KEY, JSON.stringify(all));
+    }
+    function fmtDate(ts) {
+      const d = new Date(ts);
+      const pad = n => String(n).padStart(2, '0');
+      return `${d.getFullYear()}.${pad(d.getMonth()+1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+    function startOfDay(ts)  { const d = new Date(ts); d.setHours(0,0,0,0); return d.getTime(); }
+    function startOfWeek(ts) { const d = new Date(ts); d.setHours(0,0,0,0); d.setDate(d.getDate()-d.getDay()); return d.getTime(); }
+
+    /* ════════════════════════════════════════════════════════════════
+       SMALL COMPONENTS
+    ════════════════════════════════════════════════════════════════ */
+    function Char({ ch, status, t }) {
+      const display = ch === ' ' ? '\u00A0' : ch;
+      const cls = {
+        correct:  t.charCorrect,
+        wrong:    t.charWrong,
+        current:  t.charCurrent,
+        upcoming: t.charUpcoming,
+      }[status];
+      return (
+        <span className={`inline-block font-medium leading-relaxed transition-colors duration-75 ${cls}`}>
+          {display}
+        </span>
+      );
+    }
+
+    function StatCard({ label, value, t, hi }) {
+      return (
+        <div className={`${t.card} rounded-2xl px-4 py-5 flex flex-col items-center gap-1 fade-in`}>
+          <span className={`text-3xl font-bold ${hi ? t.accent : t.text}`}>{value}</span>
+          <span className={`text-xs ${t.textSub} tracking-wide`}>{label}</span>
+        </div>
+      );
+    }
+
+    function IconBtn({ onClick, title, children, t }) {
+      return (
+        <button onClick={onClick} title={title}
+          className={`${t.iconBtn} p-2 rounded-xl transition-colors`}>
+          {children}
+        </button>
+      );
+    }
+
+    /* ════════════════════════════════════════════════════════════════
+       RANKING PAGE
+    ════════════════════════════════════════════════════════════════ */
+    const DIFF_LABEL = { easy: '하', medium: '중', hard: '상' };
+    const LANG_LABEL = { ko: '한국어', en: 'English' };
+
+    function RankingPage({ t, onBack }) {
+      const [period, setPeriod] = useState('all');
+      const [lang,   setLang]   = useState('all');
+      const [diff,   setDiff]   = useState('all');
+      const [records, setRecords] = useState(loadRecords);
+
+      const now = Date.now();
+      const filtered = useMemo(() => {
+        return records
+          .filter(r => {
+            if (period === 'today') return r.ts >= startOfDay(now);
+            if (period === 'week')  return r.ts >= startOfWeek(now);
+            return true;
+          })
+          .filter(r => lang === 'all' || r.lang === lang)
+          .filter(r => diff === 'all' || r.difficulty === diff)
+          .sort((a, b) => b.cpm - a.cpm)
+          .slice(0, 50);
+      }, [records, period, lang, diff]);
+
+      const BtnGroup = ({ options, value, onChange, extra }) => (
+        <div className={`flex gap-1 ${t.tabBg} rounded-xl p-1 ${extra || ''}`}>
+          {options.map(([v, label]) => (
+            <button key={v} onClick={() => onChange(v)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all
+                ${value === v ? t.periodActive : t.periodInactive}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+      );
+
+      return (
+        <div className={`min-h-screen ${t.page} flex flex-col`}>
+          <div className={`${t.header} px-6 py-4`}>
+            <div className="max-w-3xl mx-auto flex items-center gap-3">
+              <button onClick={onBack} className={`${t.iconBtn} p-1.5 rounded-lg transition-colors`}>
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+              </button>
+              <span className={`font-bold text-lg ${t.text}`}>랭킹</span>
+              <span className={`ml-auto text-xs ${t.textMuted}`}>{records.length}개 기록</span>
+            </div>
+          </div>
+
+          <div className="max-w-3xl mx-auto w-full px-6 py-6 flex flex-col gap-4">
+            {/* 필터 */}
+            <div className="flex flex-wrap gap-2 items-center">
+              <BtnGroup
+                options={[['all','전체'],['today','오늘'],['week','이번주']]}
+                value={period} onChange={setPeriod}
+              />
+              <BtnGroup
+                options={[['all','모든 언어'],['ko','한국어'],['en','English']]}
+                value={lang} onChange={setLang}
+              />
+              <BtnGroup
+                options={[['all','전체 난이도'],['easy','하'],['medium','중'],['hard','상']]}
+                value={diff} onChange={setDiff}
+              />
+            </div>
+
+            {/* 테이블 */}
+            <div className={`${t.card} rounded-2xl overflow-hidden`}>
+              <div className={`grid grid-cols-12 px-5 py-3 text-xs font-bold uppercase tracking-wider
+                ${t.rankHeader} border-b ${t.divider}`}>
+                <span className="col-span-1">#</span>
+                <span className="col-span-3">타수/분</span>
+                <span className="col-span-2">WPM</span>
+                <span className="col-span-2">정확도</span>
+                <span className="col-span-1">레벨</span>
+                <span className="col-span-1">언어</span>
+                <span className="col-span-2 text-right">날짜</span>
+              </div>
+
+              {filtered.length === 0 ? (
+                <div className={`px-5 py-14 text-center ${t.textMuted} text-sm`}>
+                  아직 기록이 없어요. 타자 연습을 완주해보세요!
+                </div>
+              ) : filtered.map((r, i) => (
+                <div key={r.id}
+                  className={`grid grid-cols-12 px-5 py-3.5 border-b last:border-b-0
+                    ${t.divider} ${t.rankRow} transition-colors text-sm`}>
+                  <span className={`col-span-1 font-bold ${i < 3 ? t.accent : t.textSub}`}>
+                    {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
+                  </span>
+                  <span className={`col-span-3 font-bold ${t.text}`}>
+                    {r.cpm} <span className={`text-xs font-normal ${t.textSub}`}>CPM</span>
+                  </span>
+                  <span className={`col-span-2 ${t.text}`}>{r.wpm}</span>
+                  <span className={`col-span-2 ${r.accuracy >= 95 ? t.accent : t.text}`}>{r.accuracy}%</span>
+                  <span className={`col-span-1 ${t.textSub}`}>{DIFF_LABEL[r.difficulty] || r.difficulty}</span>
+                  <span className={`col-span-1 ${t.textSub}`}>{r.lang === 'ko' ? '한' : 'EN'}</span>
+                  <span className={`col-span-2 text-right ${t.textMuted} text-xs`}>{fmtDate(r.ts)}</span>
+                </div>
+              ))}
+            </div>
+
+            {records.length > 0 && (
+              <button
+                onClick={() => { localStorage.removeItem(LS_KEY); setRecords([]); }}
+                className={`self-end text-xs ${t.btnDanger} transition-colors`}>
+                모든 기록 초기화
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    /* ════════════════════════════════════════════════════════════════
+       COMPLETED SCREEN
+    ════════════════════════════════════════════════════════════════ */
+    function CompletedScreen({ cpm, wpm, accuracy, t, onRestart, onRanking }) {
+      const stats = [
+        { label: '타수/분', value: cpm, sub: 'CPM' },
+        { label: 'WPM', value: wpm, sub: '' },
+        { label: '정확도', value: accuracy + '%', sub: '' },
+      ];
+      return (
+        <div className={`min-h-screen ${t.page} flex items-center justify-center p-6`}>
+          <div className={`${t.card} rounded-3xl p-10 max-w-md w-full text-center fade-in`}>
+            <div className={`w-16 h-16 ${t.accentSoft} rounded-full flex items-center justify-center mx-auto mb-5`}>
+              <svg className={`w-8 h-8 ${t.accent}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
+              </svg>
+            </div>
+            <h2 className={`text-2xl font-bold ${t.text} mb-1`}>완주했습니다!</h2>
+            <p className={`${t.textSub} text-sm mb-8`}>모든 문장을 완료했어요</p>
+
+            <div className="grid grid-cols-3 gap-3 mb-8">
+              {stats.map(({ label, value, sub }) => (
+                <div key={label} className={`${t.accentSoft} rounded-2xl p-4`}>
+                  <div className={`text-2xl font-bold ${t.accent}`}>{value}</div>
+                  <div className={`text-xs ${t.textSub} mt-1`}>{label}{sub && ` (${sub})`}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-3">
+              <button onClick={onRanking}
+                className={`flex-1 ${t.btnOutline} rounded-2xl py-3 text-sm font-semibold transition-colors`}>
+                랭킹 보기
+              </button>
+              <button onClick={onRestart}
+                className={`flex-1 ${t.accentBg} text-white rounded-2xl py-3 text-sm font-semibold transition-colors`}>
+                다시 시작
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    /* ════════════════════════════════════════════════════════════════
+       MAIN APP
+    ════════════════════════════════════════════════════════════════ */
+    function App() {
+      /* nav */
+      const [page,       setPage]       = useState('typing');
+      /* settings */
+      const [lang,       setLang]       = useState('ko');
+      const [difficulty, setDifficulty] = useState('medium');
+      const [theme,      setTheme]      = useState('light');
+      const [soundOn,    setSoundOn]    = useState(true);
+      /* game */
+      const [gameState,  setGameState]  = useState('idle'); // idle|playing|paused|completed
+      const [idx,        setIdx]        = useState(0);
+      const [input,      setInput]      = useState('');
+      const [composing,  setComposing]  = useState(false);
+      const [startTime,  setStartTime]  = useState(null);
+      const [pausedMs,   setPausedMs]   = useState(0);
+      const [elapsed,    setElapsed]    = useState(0);
+      const [session,    setSession]    = useState({ correct: 0, typed: 0 });
+
+      const inputRef = useRef(null);
+      const timerRef = useRef(null);
+      const t = TH[theme];
+      const sentences = SENTENCES[lang][difficulty];
+      const sentence  = sentences[idx];
+
+      /* timer */
+      useEffect(() => {
+        if (gameState === 'playing' && startTime) {
+          timerRef.current = setInterval(
+            () => setElapsed(pausedMs + (Date.now() - startTime)), 200
+          );
+        } else {
+          clearInterval(timerRef.current);
+        }
+        return () => clearInterval(timerRef.current);
+      }, [gameState, startTime, pausedMs]);
+
+      /* reset when lang or difficulty changes */
+      useEffect(() => { doReset(); }, [lang, difficulty]);
+
+      /* focus input when playing */
+      useEffect(() => {
+        if (gameState === 'playing') inputRef.current?.focus();
+      }, [gameState, idx]);
+
+      /* ── derived stats ── */
+      const inputCorrect = input.split('').filter((ch, i) => ch === sentence[i]).length;
+      const totCorrect   = session.correct + inputCorrect;
+      const totTyped     = session.typed   + input.length;
+      const elapsedMin   = elapsed / 60000;
+      const cpm          = elapsedMin > 0.05 ? Math.round(totCorrect / elapsedMin) : 0;
+      const wpm          = Math.round(cpm / 3.5);
+      const accuracy     = totTyped > 0 ? Math.round((totCorrect / totTyped) * 100) : 100;
+      const progress     = Math.min(100,
+        Math.round(((idx + input.length / Math.max(sentence.length, 1)) / sentences.length) * 100)
+      );
+
+      const charStatuses = sentence.split('').map((_, i) => {
+        if (i < input.length) return input[i] === sentence[i] ? 'correct' : 'wrong';
+        if (i === input.length) return 'current';
+        return 'upcoming';
+      });
+
+      /* ── actions ── */
+      function doStart() {
+        setStartTime(Date.now());
+        setGameState('playing');
+      }
+      function doPause() {
+        setPausedMs(elapsed);
+        setStartTime(null);
+        setGameState('paused');
+      }
+      function doReset() {
+        clearInterval(timerRef.current);
+        setGameState('idle');
+        setIdx(0);
+        setInput('');
+        setStartTime(null);
+        setPausedMs(0);
+        setElapsed(0);
+        setSession({ correct: 0, typed: 0 });
+      }
+      function doAdvance() {
+        const correct = input.split('').filter((ch, i) => ch === sentence[i]).length;
+        const newSess = { correct: session.correct + correct, typed: session.typed + input.length };
+        if (idx + 1 >= sentences.length) {
+          clearInterval(timerRef.current);
+          const mins   = elapsed / 60000;
+          const fCpm   = mins > 0.05 ? Math.round(newSess.correct / mins) : 0;
+          const fWpm   = Math.round(fCpm / 3.5);
+          const fAcc   = newSess.typed > 0 ? Math.round((newSess.correct / newSess.typed) * 100) : 100;
+          saveRecord({ lang, difficulty, cpm: fCpm, wpm: fWpm, accuracy: fAcc });
+          setSession(newSess);
+          setGameState('completed');
+        } else {
+          setSession(newSess);
+          setIdx(i => i + 1);
+          setInput('');
+        }
+      }
+
+      function handleChange(e) {
+        if (gameState !== 'playing') return;
+        const val = e.target.value;
+        if (!composing && val.length > sentence.length) return;
+        setInput(val);
+      }
+      function handleKeyDown(e) {
+        if (gameState !== 'playing') return;
+        // 영어: 조합 중이 아닐 때만 keydown으로 발음
+        // 한국어 IME 조합 중에는 e.key === 'Process' 이므로 여기선 무시
+        if (soundOn && !composing && e.key.length === 1 && !e.ctrlKey && !e.metaKey) playClick();
+        if (e.key === 'Enter' && !composing) { e.preventDefault(); doAdvance(); }
+      }
+      // 한국어 자모 1타마다 compositionupdate 발생 → 여기서 소리
+      function handleCompositionUpdate() {
+        if (soundOn && gameState === 'playing') playClick();
+      }
+
+      /* ── completed ── */
+      if (gameState === 'completed') {
+        const mins = elapsed / 60000;
+        const fCpm = mins > 0.05 ? Math.round(session.correct / mins) : 0;
+        return (
+          <CompletedScreen
+            cpm={fCpm} wpm={Math.round(fCpm / 3.5)}
+            accuracy={session.typed > 0 ? Math.round((session.correct / session.typed) * 100) : 100}
+            t={t} onRestart={doReset} onRanking={() => setPage('ranking')}
+          />
+        );
+      }
+
+      /* ── ranking page ── */
+      if (page === 'ranking') return <RankingPage t={t} onBack={() => setPage('typing')} />;
+
+      /* ════════════ TYPING PAGE ════════════ */
+      return (
+        <div className={`min-h-screen ${t.page} flex flex-col`}>
+
+          {/* ── HEADER ── */}
+          <header className={t.header}>
+            <div className="max-w-3xl mx-auto px-6 py-3.5 flex items-center gap-3 flex-wrap">
+              {/* logo */}
+              <div className={`w-8 h-8 ${t.accentBg} text-white rounded-xl flex items-center justify-center flex-shrink-0`}>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round"
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5
+                       m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+              </div>
+              <span className={`font-bold text-lg ${t.text}`}>타자 연습</span>
+
+              {/* lang tabs */}
+              <div className={`flex gap-1 ${t.tabBg} rounded-xl p-1 ml-2`}>
+                {[['ko','한국어'],['en','English']].map(([v,lbl]) => (
+                  <button key={v} onClick={() => setLang(v)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all
+                      ${lang === v ? t.tabActive : t.tabInactive}`}>
+                    {lbl}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex-1" />
+
+              {/* sound */}
+              <IconBtn onClick={() => setSoundOn(s => !s)} title="효과음" t={t}>
+                {soundOn
+                  ? <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round"
+                        d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/>
+                    </svg>
+                  : <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round"
+                        d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6m0-6l6 6"/>
+                    </svg>
+                }
+              </IconBtn>
+
+              {/* theme */}
+              <IconBtn onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')} title="테마" t={t}>
+                {theme === 'light'
+                  ? <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round"
+                        d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                    </svg>
+                  : <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round"
+                        d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707
+                           M6.343 6.343l-.707-.707m12.728 0l-.707.707
+                           M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                }
+              </IconBtn>
+
+              {/* ranking */}
+              <IconBtn onClick={() => setPage('ranking')} title="랭킹" t={t}>
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round"
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2
+                       a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14
+                       a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+              </IconBtn>
+            </div>
+          </header>
+
+          {/* ── MAIN ── */}
+          <main className="flex-1 max-w-3xl mx-auto w-full px-6 py-6 flex flex-col gap-4">
+
+            {/* ── 난이도 + 컨트롤 ── */}
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* difficulty */}
+              <div className="flex items-center gap-2">
+                <span className={`text-xs font-semibold ${t.textSub} shrink-0`}>난이도</span>
+                <div className={`flex gap-1 ${t.tabBg} rounded-xl p-1`}>
+                  {[['easy','하'],['medium','중'],['hard','상']].map(([v,lbl]) => (
+                    <button key={v} onClick={() => setDifficulty(v)}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all
+                        ${difficulty === v ? t.diffActive : t.diffInactive}`}>
+                      {lbl}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex-1" />
+
+              {/* control buttons */}
+              <div className="flex gap-2 items-center">
+                {gameState === 'idle' && (
+                  <button onClick={doStart}
+                    className={`${t.accentBg} text-white px-5 py-2 rounded-xl text-sm font-bold
+                      transition-all flex items-center gap-2`}>
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832
+                           l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd"/>
+                    </svg>
+                    시작
+                  </button>
+                )}
+                {gameState === 'playing' && (
+                  <button onClick={doPause}
+                    className={`${t.btnOutline} px-5 py-2 rounded-xl text-sm font-bold
+                      transition-all flex items-center gap-2`}>
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0
+                           00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd"/>
+                    </svg>
+                    일시중단
+                  </button>
+                )}
+                {gameState === 'paused' && (
+                  <button onClick={doStart}
+                    className={`${t.accentBg} text-white px-5 py-2 rounded-xl text-sm font-bold
+                      transition-all flex items-center gap-2`}>
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832
+                           l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd"/>
+                    </svg>
+                    재개
+                  </button>
+                )}
+                {gameState !== 'idle' && (
+                  <button onClick={doReset} title="초기화"
+                    className={`${t.iconBtn} p-2.5 rounded-xl transition-colors`}>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003
+                           8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* ── STATS ── */}
+            <div className="grid grid-cols-3 gap-3">
+              <StatCard label="타수/분 (CPM)" value={cpm} t={t} />
+              <StatCard label="정확도" value={accuracy + '%'} t={t} hi={accuracy >= 95} />
+              <StatCard label="WPM" value={wpm} t={t} />
+            </div>
+
+            {/* ── PROGRESS ── */}
+            <div className={`${t.card} rounded-2xl px-6 py-4`}>
+              <div className="flex justify-between text-xs mb-2.5">
+                <span className={`font-semibold ${t.textSub}`}>진행도</span>
+                <span className={`font-bold ${t.accent}`}>{idx + 1} / {sentences.length}</span>
+              </div>
+              <div className={`w-full ${t.progressBg} rounded-full h-2 overflow-hidden`}>
+                <div className={`${t.accentBar} h-2 rounded-full transition-all duration-500`}
+                  style={{ width: Math.max(progress, 1) + '%' }} />
+              </div>
+            </div>
+
+            {/* ── TYPING PANEL ── */}
+            <div className={`${t.card} rounded-2xl px-8 py-7 flex flex-col gap-5 relative overflow-hidden`}>
+
+              {/* badge */}
+              <div className="flex items-center gap-2">
+                <span className={`text-xs font-bold px-3 py-1 rounded-full ${t.accentSoft}`}>
+                  {LANG_LABEL[lang]} · 난이도 {DIFF_LABEL[difficulty]}
+                </span>
+                <span className={`text-xs ${t.textMuted}`}>Enter → 다음 문장</span>
+              </div>
+
+              {/* target sentence */}
+              <div
+                className="text-[1.55rem] tracking-wide leading-loose select-none min-h-[4rem]
+                  flex flex-wrap items-baseline cursor-text"
+                onClick={() => gameState === 'playing' && inputRef.current?.focus()}
+              >
+                {sentence.split('').map((ch, i) => (
+                  <Char key={i} ch={ch} status={charStatuses[i]} t={t} />
+                ))}
+              </div>
+
+              <div className={`border-t ${t.divider}`} />
+
+              {/* input */}
+              <div className="relative">
+                <textarea
+                  ref={inputRef}
+                  value={input}
+                  onChange={handleChange}
+                  onKeyDown={handleKeyDown}
+                  onCompositionStart={() => setComposing(true)}
+                  onCompositionUpdate={handleCompositionUpdate}
+                  onCompositionEnd={e => {
+                    setComposing(false);
+                    if (e.target.value.length > sentence.length) setInput(sentence);
+                  }}
+                  rows={2}
+                  disabled={gameState !== 'playing'}
+                  placeholder={
+                    gameState === 'idle'   ? '시작 버튼을 눌러주세요...' :
+                    gameState === 'paused' ? '일시중단됨...' :
+                    '여기에 입력하세요...'
+                  }
+                  className={`w-full resize-none rounded-xl border-2 outline-none px-5 py-4
+                    text-xl leading-relaxed transition-colors duration-200
+                    disabled:opacity-40 disabled:cursor-not-allowed ${t.inputField}`}
+                  spellCheck={false} autoComplete="off" autoCorrect="off" autoCapitalize="off"
+                />
+                <span className={`absolute right-4 bottom-3 text-xs ${t.textMuted} select-none`}>
+                  {input.length} / {sentence.length}
+                </span>
+              </div>
+
+              {/* typo warning */}
+              {gameState === 'playing' && input.length > 0 && inputCorrect < input.length && (
+                <div className="flex items-center gap-2 text-sm text-red-400 fade-in">
+                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round"
+                      d="M12 9v2m0 4h.01M12 3a9 9 0 100 18 9 9 0 000-18z"/>
+                  </svg>
+                  오타가 있어요.
+                </div>
+              )}
+
+              {/* ── PAUSE OVERLAY ── */}
+              {(gameState === 'paused' || gameState === 'idle') && (
+                <div className={`absolute inset-0 rounded-2xl ${t.pauseOverlay}
+                  flex flex-col items-center justify-center gap-4 z-10`}>
+                  <div className={`w-14 h-14 ${t.card} rounded-2xl flex items-center justify-center shadow-lg`}>
+                    {gameState === 'idle'
+                      ? <svg className={`w-7 h-7 ${t.accent}`} fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0
+                               001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd"/>
+                        </svg>
+                      : <svg className={`w-7 h-7 ${t.accent}`} fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd"
+                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1
+                               1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd"/>
+                        </svg>
+                    }
+                  </div>
+                  <p className={`${t.text} font-bold text-lg`}>
+                    {gameState === 'idle' ? '준비됐나요?' : '일시중단'}
+                  </p>
+                  <button onClick={doStart}
+                    className={`${t.accentBg} text-white px-8 py-3 rounded-2xl font-bold text-sm
+                      transition-colors flex items-center gap-2`}>
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0
+                           001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd"/>
+                    </svg>
+                    {gameState === 'idle' ? '시작하기' : '재개하기'}
+                  </button>
+                  {gameState === 'idle' && (
+                    <p className={`text-xs ${t.textMuted}`}>타이머가 시작됩니다</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+          </main>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
