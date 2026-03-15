@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NewJeans | Choose Your Mood</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Space Grotesk', 'Noto Sans KR', sans-serif;
+      background: #06060a;
+      color: #fff;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    /* ─────────────────────────────────────────
+       LANDING PAGE
+    ───────────────────────────────────────── */
+    #page-landing {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1;
+    }
+
+    /* Ambient background blobs */
+    .bg-blob {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background:
+        radial-gradient(ellipse 55% 45% at 15% 25%, rgba(130, 60, 220, 0.14) 0%, transparent 70%),
+        radial-gradient(ellipse 45% 55% at 85% 75%, rgba(220, 60, 100, 0.10) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 40% at 50% 50%, rgba(40, 80, 180, 0.08) 0%, transparent 70%),
+        #06060a;
+    }
+
+    /* 2×2 Album Grid */
+    .album-grid {
+      position: relative;
+      z-index: 10;
+      display: grid;
+      grid-template-columns: 210px 210px;
+      grid-template-rows: 210px 210px;
+      gap: 28px;
+    }
+
+    .album-card {
+      position: relative;
+      width: 210px;
+      height: 210px;
+      cursor: pointer;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.07),
+        0 24px 60px rgba(0,0,0,0.65);
+      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  box-shadow 0.35s ease;
+    }
+
+    .album-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: filter 2.2s ease;
+    }
+
+    /* Hover ring */
+    .album-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 18px;
+      border: 2px solid rgba(255,255,255,0.0);
+      transition: border-color 0.3s;
+      pointer-events: none;
+    }
+    .album-card:hover::after { border-color: rgba(255,255,255,0.35); }
+
+    .album-card:hover {
+      transform: scale(1.07) translateY(-6px);
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.15),
+        0 32px 80px rgba(0,0,0,0.8),
+        0 0 60px rgba(200,150,255,0.15);
+    }
+
+    /* Album name overlay */
+    .album-label {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 36px 14px 14px;
+      background: linear-gradient(transparent, rgba(0,0,0,0.7));
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.85);
+      opacity: 0;
+      transition: opacity 0.25s;
+      pointer-events: none;
+    }
+    .album-card:hover .album-label { opacity: 1; }
+
+    /* ─────────────────────────────────────────
+       FLOATING MOOD TEXT
+    ───────────────────────────────────────── */
+    /* ── Mood Text ── */
+    #mood-text {
+      position: fixed;
+      z-index: 50;
+      pointer-events: none;
+      user-select: none;
+      will-change: left, top;
+      text-align: center;
+      perspective: 700px;
+    }
+    #mood-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transform-origin: center center;
+    }
+    .mood-line {
+      display: flex;
+      justify-content: center;
+      line-height: 1;
+    }
+    .mood-char {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 92px;
+      color: #0059e1;
+      display: inline-block;
+      line-height: 1;
+      transform-origin: center bottom;
+      text-shadow:
+        0 0 18px rgba(0,89,225,0.55),
+        0 0 40px rgba(0,89,225,0.25);
+    }
+
+    /* — Typing: char pop-in — */
+    .mood-char.c-hidden  { opacity: 0; transform: translateY(-12px) scale(0.6); }
+    .mood-char.c-visible { animation: cPop .28s cubic-bezier(.34,1.56,.64,1) forwards; }
+    @keyframes cPop {
+      from { opacity:0; transform: translateY(-12px) scale(.6); }
+      to   { opacity:1; transform: translateY(0)     scale(1);  }
+    }
+
+    /* — Wave — */
+    @keyframes cWave {
+      0%,100% { transform: translateY(0)     scale(1);    }
+      50%      { transform: translateY(-22px) scale(1.08); }
+    }
+
+    /* — Spin Y (3D flip) — */
+    @keyframes spinY {
+      from { transform: rotateY(0deg);   }
+      to   { transform: rotateY(360deg); }
+    }
+
+    /* — Zoom pulse — */
+    @keyframes zoomPulse {
+      0%   { transform: scale(1);    }
+      45%  { transform: scale(1.55); }
+      72%  { transform: scale(0.88); }
+      100% { transform: scale(1);    }
+    }
+
+    /* — 2D Rotate — */
+    @keyframes rotateAll {
+      0%   { transform: rotate(0deg)   scale(1);   }
+      50%  { transform: rotate(180deg) scale(0.6); }
+      100% { transform: rotate(360deg) scale(1);   }
+    }
+
+    /* — Scatter (each char flies out then back) — */
+    @keyframes scatter {
+      0%,100% { transform: translate(0,0) scale(1); opacity:1; }
+      40%      { opacity:.4; }
+      50%      { transform: translate(var(--sx),var(--sy)) scale(.4); opacity:0; }
+    }
+
+    /* ─────────────────────────────────────────
+       RECOMMENDATION PAGE
+    ───────────────────────────────────────── */
+    #page-recommend {
+      position: fixed;
+      inset: 0;
+      background: #06060a;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 100;
+      opacity: 0;
+      transform: translateY(18px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+    #page-recommend.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Header */
+    .rec-header {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 22px 48px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      flex-shrink: 0;
+    }
+
+    #back-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: #fff;
+      padding: 9px 20px;
+      border-radius: 100px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-family: inherit;
+      font-weight: 500;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    #back-btn:hover {
+      background: rgba(255,255,255,0.13);
+      border-color: rgba(255,255,255,0.22);
+    }
+
+    .rec-header-subtitle {
+      font-size: 1rem;
+      font-weight: 500;
+      opacity: 0.45;
+    }
+
+    /* Now Playing */
+    .now-playing-section {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      padding: 32px 48px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      flex-shrink: 0;
+    }
+
+    .vinyl {
+      width: 104px;
+      height: 104px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: conic-gradient(
+        from 0deg,
+        #14142a 0deg, #1e1040 60deg, #0f2a50 120deg,
+        #3a1a60 180deg, #14142a 240deg, #1e1040 300deg, #14142a 360deg
+      );
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      box-shadow: 0 0 28px rgba(140,100,255,0.3);
+      animation: vinylSpin 3.5s linear infinite;
+    }
+    .vinyl::after {
+      content: '';
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #10101c;
+      border: 3px solid #1e1e32;
+    }
+    @keyframes vinylSpin { to { transform: rotate(360deg); } }
+    .vinyl.paused { animation-play-state: paused; }
+
+    .np-info { flex: 1; min-width: 0; }
+
+    .np-badge {
+      display: inline-block;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      background: rgba(190,120,255,0.12);
+      color: #c084fc;
+      border: 1px solid rgba(190,120,255,0.3);
+      padding: 3px 11px;
+      border-radius: 100px;
+      margin-bottom: 10px;
+    }
+
+    .np-song-title {
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1.15;
+      margin-bottom: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .np-song-meta {
+      font-size: 0.9rem;
+      opacity: 0.4;
+    }
+
+
+    #shuffle-btn {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #fff;
+      padding: 11px 22px;
+      border-radius: 100px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-family: inherit;
+      font-weight: 500;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+    #shuffle-btn:hover { background: rgba(255,255,255,0.1); }
+
+    /* Spotify Player */
+    #spotify-container {
+      flex: 1;
+      min-width: 0;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    #spotify-player {
+      width: 100%;
+      height: 80px;
+      border: none;
+      display: block;
+    }
+
+    /* Genre Tabs */
+    .genre-tabs-wrap {
+      padding: 22px 48px 14px;
+      flex-shrink: 0;
+    }
+    .genre-tabs {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .genre-tab {
+      padding: 8px 20px;
+      border-radius: 100px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: transparent;
+      color: rgba(255,255,255,0.45);
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-family: inherit;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .genre-tab:hover {
+      border-color: rgba(255,255,255,0.25);
+      color: rgba(255,255,255,0.75);
+    }
+    .genre-tab.active {
+      background: #fff;
+      color: #06060a;
+      border-color: #fff;
+      font-weight: 600;
+    }
+
+    /* Song List */
+    .song-list-wrap {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px 36px 40px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.08) transparent;
+    }
+    .song-list-wrap::-webkit-scrollbar { width: 4px; }
+    .song-list-wrap::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
+
+    .song-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 4px;
+    }
+
+    .song-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 13px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .song-item:hover { background: rgba(255,255,255,0.05); }
+    .song-item.is-playing { background: rgba(190,120,255,0.09); }
+
+    .song-num {
+      width: 22px;
+      text-align: center;
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.28);
+      flex-shrink: 0;
+    }
+    .song-item.is-playing .song-num::before { content: '♪'; color: #c084fc; }
+    .song-item.is-playing .s-num-txt { display: none; }
+
+    .song-details { flex: 1; min-width: 0; }
+    .s-name {
+      font-size: 0.95rem;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .s-year {
+      font-size: 0.76rem;
+      color: rgba(255,255,255,0.3);
+      margin-top: 2px;
+    }
+
+    .s-play-icon {
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.35);
+      opacity: 0;
+      transition: opacity 0.15s;
+      flex-shrink: 0;
+    }
+    .song-item:hover .s-play-icon { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<div class="bg-blob"></div>
+
+<!-- ╔══════════════════════════════════════╗
+     ║         PAGE 1 — LANDING            ║
+     ╚══════════════════════════════════════╝ -->
+<div id="page-landing">
+
+  <div class="album-grid">
+    <!-- ★ 이미지 경로: 현재 파일(creai-it/)에서 상위 폴더의 학회/보조자료/ 참조 -->
+    <div class="album-card" onclick="selectAlbum('nw1')">
+      <img id="img-nw1" src="../학회/보조자료/뉴1.jpeg" alt="NewJeans">
+      <div class="album-label">OMG · 2023</div>
+    </div>
+    <div class="album-card" onclick="selectAlbum('nw2')">
+      <img id="img-nw2" src="../학회/보조자료/뉴2.jpeg" alt="NewJeans">
+      <div class="album-label">NewJeans · 2022</div>
+    </div>
+    <div class="album-card" onclick="selectAlbum('nw4')">
+      <img id="img-nw4" src="../학회/보조자료/뉴4.jpeg" alt="NewJeans">
+      <div class="album-label">Get Up · 2023</div>
+    </div>
+    <div class="album-card" onclick="selectAlbum('nw5')">
+      <img id="img-nw5" src="../학회/보조자료/뉴5.jpeg" alt="NewJeans">
+      <div class="album-label">How Sweet · 2024</div>
+    </div>
+  </div>
+
+  <div id="mood-text">
+    <div id="mood-inner">
+      <div class="mood-line">
+        <span class="mood-char">C</span><span class="mood-char">H</span><span class="mood-char">O</span><span class="mood-char">O</span><span class="mood-char">S</span><span class="mood-char">E</span>
+      </div>
+      <div class="mood-line">
+        <span class="mood-char">Y</span><span class="mood-char">O</span><span class="mood-char">U</span><span class="mood-char">R</span><span class="mood-char">&nbsp;</span><span class="mood-char">M</span><span class="mood-char">O</span><span class="mood-char">O</span><span class="mood-char">D</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ╔══════════════════════════════════════╗
+     ║      PAGE 2 — RECOMMENDATION        ║
+     ╚══════════════════════════════════════╝ -->
+<div id="page-recommend">
+
+  <div class="rec-header">
+    <button id="back-btn" onclick="goBack()">← 이전</button>
+    <span class="rec-header-subtitle" id="rec-subtitle">NewJeans Playlist</span>
+  </div>
+
+  <div class="now-playing-section">
+    <div class="np-info">
+      <div class="np-badge">NOW PLAYING</div>
+      <div class="np-song-title" id="np-title">—</div>
+      <div class="np-song-meta">NewJeans · <span id="np-genre-label">—</span></div>
+    </div>
+    <button id="shuffle-btn" onclick="playRandomSong()">🔀 다른 곡</button>
+  </div>
+
+  <!-- Spotify Player -->
+  <div id="spotify-container">
+    <iframe id="spotify-player"
+      allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+      loading="lazy"></iframe>
+  </div>
+
+  <div class="genre-tabs-wrap">
+    <div class="genre-tabs" id="genre-tabs">
+      <button class="genre-tab" data-genre="pop"        onclick="switchGenre(this)">R&amp;B / 팝</button>
+      <button class="genre-tab" data-genre="ballad"     onclick="switchGenre(this)">발라드 / 감성</button>
+      <button class="genre-tab" data-genre="retro"      onclick="switchGenre(this)">레트로 / 시티팝</button>
+      <button class="genre-tab" data-genre="electronic" onclick="switchGenre(this)">일렉트로닉</button>
+    </div>
+  </div>
+
+  <div class="song-list-wrap">
+    <div class="song-list" id="song-list"></div>
+  </div>
+
+</div>
+
+<!-- ╔══════════════════════════════════════╗
+     ║              SCRIPT                  ║
+     ╚══════════════════════════════════════╝ -->
+<script>
+/* ══════════════════════════════════════════════════
+   DATA
+   ytId: YouTube 영상 ID (11자리)를 입력하세요.
+   예시) 'Hype Boy' MV → YouTube URL의 ?v= 뒤 값
+══════════════════════════════════════════════════ */
+const SONGS = {
+  pop: [
+    { title: 'Attention',     year: 2022, spId: '2pIUpMhHL6L9Z5lnKxJJr9' },
+    { title: 'Hype Boy',      year: 2022, spId: '0a4MMyCrzT0En247IhqZbD' },
+    { title: 'Cookie',        year: 2022, spId: '2DwUdMJ5uxv20EhAildreg' },
+    { title: 'New Jeans',     year: 2022, spId: '6rdkCkjk6D12xRpdMXy0I2' },
+    { title: 'Ditto',         year: 2023, spId: '3r8RuvgbX9s7ammBn07D3W' },
+    { title: 'OMG',           year: 2023, spId: '65FftemJ1DbbZ45DUfHJXE' },
+    { title: 'Super Shy',     year: 2023, spId: '5sdQOyqq2IDhvmx2lHOpwd' },
+    { title: 'Cool With You', year: 2023, spId: '02wk5BttM0QL38ERjLPQJB' },
+    { title: 'How Sweet',     year: 2024, spId: '38tXZcL1gZRfbqfOG0VMTH' },
+  ],
+  ballad: [
+    { title: 'Hurt',          year: 2022, spId: '5expoVGQPvXuwBBFuNGqBd' },
+    { title: 'Right Now',     year: 2024, spId: '58Q3FZFs1YXPpliWQB5kXB' },
+    { title: 'Bubble Gum',    year: 2024, spId: '19D8LNpWwIPpi6hs9BG7dq' },
+  ],
+  retro: [
+    { title: 'Get Up',        year: 2023, spId: '1wUnuiXMMvhudmzvcCtlZP' },
+    { title: 'ASAP',          year: 2023, spId: '5fpyAakgFOm4YTXkgfPzvV' },
+    { title: 'Supernatural',  year: 2024, spId: '5ocSQW5sIUIOFojwXEz9Ki' },
+  ],
+  electronic: [
+    { title: 'Zero',          year: 2022, spId: '5LMoKDVzW2kDneNu2UbspP' },
+    { title: 'ETA',           year: 2023, spId: '56v8WEnGzLByGsDAXDiv4d' },
+  ],
+};
+
+const GENRE_LABELS = {
+  pop: 'R&B / 팝',
+  ballad: '발라드 / 감성',
+  retro: '레트로 / 시티팝',
+  electronic: '일렉트로닉',
+};
+
+/* 앨범 → 기본 장르 매핑 */
+const ALBUM_META = {
+  nw1: { subtitle: 'OMG 바이브 선택됨 🖤',  defaultGenre: 'electronic' },
+  nw2: { subtitle: '달달한 무드 선택됨 🩷',  defaultGenre: 'pop'        },
+  nw4: { subtitle: '쿨한 무드 선택됨 💙',   defaultGenre: 'retro'      },
+  nw5: { subtitle: '잔잔한 무드 선택됨 💚', defaultGenre: 'ballad'     },
+};
+
+/* ══════════════════════════════════════════════════
+   COLOR CYCLING — 앨범 커버 색상 랜덤 변환
+══════════════════════════════════════════════════ */
+const FILTERS = [
+  'hue-rotate(0deg)   saturate(1.15) brightness(1.0)',   // 원본 붉은 계열
+  'hue-rotate(30deg)  saturate(1.30) brightness(1.05)',  // 오렌지
+  'hue-rotate(75deg)  saturate(1.10) brightness(0.95)',  // 연두/초록
+  'hue-rotate(150deg) saturate(1.20) brightness(0.92)',  // 민트
+  'hue-rotate(210deg) saturate(1.35) brightness(0.90)',  // 파랑
+  'hue-rotate(255deg) saturate(1.25) brightness(0.88)',  // 보라
+  'hue-rotate(300deg) saturate(1.40) brightness(1.0)',   // 핑크
+  'hue-rotate(340deg) saturate(1.20) brightness(1.05)',  // 로즈
+  'saturate(0)        brightness(1.10)',                  // 흑백
+  'hue-rotate(48deg)  saturate(1.50) brightness(1.10)',  // 골드
+];
+
+function startColorCycle(imgEl, lastIdx) {
+  let next;
+  do { next = Math.floor(Math.random() * FILTERS.length); } while (next === lastIdx);
+  imgEl.style.filter = FILTERS[next];
+  const delay = 1800 + Math.random() * 2400; // 1.8 ~ 4.2초
+  setTimeout(() => startColorCycle(imgEl, next), delay);
+}
+
+['nw1', 'nw2', 'nw4', 'nw5'].forEach((id, i) => {
+  const img = document.getElementById(`img-${id}`);
+  setTimeout(() => startColorCycle(img, -1), i * 600); // 카드마다 시작 시간 엇갈리기
+});
+
+/* ══════════════════════════════════════════════════
+   MOOD TEXT — 애니메이션 + 마우스 회피
+══════════════════════════════════════════════════ */
+const moodEl    = document.getElementById('mood-text');
+const moodInner = document.getElementById('mood-inner');
+const moodChars = Array.from(document.querySelectorAll('.mood-char'));
+
+let tx = 0, ty = 0;   // 위치 (fonts.ready 이후 설정)
+let vx = 0.5, vy = 0.3;
+let mx = -9999, my = -9999;
+
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+
+/* ── 마우스 회피 물리 루프 ── */
+function animateText() {
+  const tw = moodEl.offsetWidth;
+  const th = moodEl.offsetHeight;
+  const W  = window.innerWidth;
+  const H  = window.innerHeight;
+
+  const cx = tx + tw / 2, cy = ty + th / 2;
+  const dx = mx - cx, dy = my - cy;
+  const dist = Math.hypot(dx, dy);
+  const R = 190;
+
+  if (dist < R && dist > 0) {
+    const power = Math.pow((R - dist) / R, 1.7) * 6;
+    vx -= (dx / dist) * power;
+    vy -= (dy / dist) * power;
+  }
+
+  vx += (Math.random() - 0.5) * 0.06;
+  vy += (Math.random() - 0.5) * 0.06;
+
+  const spd = Math.hypot(vx, vy);
+  if (spd > 7)   { vx = vx/spd*7; vy = vy/spd*7; }
+  if (spd < 0.28 && dist > R) {
+    const a = Math.atan2(vy, vx);
+    vx = Math.cos(a) * 0.28;
+    vy = Math.sin(a) * 0.28;
+  }
+
+  vx *= 0.965; vy *= 0.965;
+
+  if (tx <= 0 || tx >= W - tw) vx = -vx * 0.65;
+  if (ty <= 0 || ty >= H - th) vy = -vy * 0.65;
+
+  tx = Math.max(0, Math.min(W - tw, tx + vx));
+  ty = Math.max(0, Math.min(H - th, ty + vy));
+
+  moodEl.style.left = tx + 'px';
+  moodEl.style.top  = ty + 'px';
+
+  requestAnimationFrame(animateText);
+}
+
+/* ── 디스플레이 애니메이션 시퀀스 ── */
+const PHASES = [
+  { name:'typing',   dur: 2600 },  // 한 글자씩 등장
+  { name:'pause',    dur: 700  },
+  { name:'wave',     dur: 2000 },  // 물결
+  { name:'pause',    dur: 500  },
+  { name:'spinY',    dur: 1300 },  // 3D 좌우 회전
+  { name:'pause',    dur: 500  },
+  { name:'zoom',     dur: 1200 },  // 확대 → 축소
+  { name:'pause',    dur: 500  },
+  { name:'rotate2d', dur: 1100 },  // 2D 360 회전
+  { name:'pause',    dur: 500  },
+  { name:'scatter',  dur: 1400 },  // 각 글자 흩어짐
+  { name:'pause',    dur: 800  },
+];
+let phaseIdx = 0;
+
+function resetChars() {
+  moodInner.style.animation = '';
+  moodInner.style.transform = '';
+  moodChars.forEach(c => {
+    c.style.animation = '';
+    c.style.transform = '';
+    c.style.opacity   = '1';
+    c.classList.remove('c-hidden','c-visible');
+  });
+}
+
+function runPhase() {
+  const { name, dur } = PHASES[phaseIdx];
+  resetChars();
+
+  if (name === 'typing') {
+    moodChars.forEach(c => c.classList.add('c-hidden'));
+    moodChars.forEach((c, i) => {
+      setTimeout(() => {
+        c.classList.remove('c-hidden');
+        c.classList.add('c-visible');
+      }, i * 130);
+    });
+
+  } else if (name === 'wave') {
+    moodChars.forEach((c, i) => {
+      c.style.animation = `cWave .65s ease-in-out ${i * 0.08}s 3`;
+    });
+
+  } else if (name === 'spinY') {
+    moodInner.style.animation = 'spinY 1.1s cubic-bezier(.45,.05,.55,.95) forwards';
+
+  } else if (name === 'zoom') {
+    moodInner.style.animation = 'zoomPulse 1.0s cubic-bezier(.34,1.56,.64,1) forwards';
+
+  } else if (name === 'rotate2d') {
+    moodInner.style.animation = 'rotateAll 1.0s ease-in-out forwards';
+
+  } else if (name === 'scatter') {
+    const dirs = [[-120,-80],[120,-80],[-80,100],[80,100],[-150,30],[150,30],
+                  [-60,-120],[60,-120],[-100,60],[100,60],[-130,-50],[130,-50],
+                  [-70,90],[70,90],[0,-130]];
+    moodChars.forEach((c, i) => {
+      const [sx, sy] = dirs[i % dirs.length];
+      c.style.setProperty('--sx', sx + 'px');
+      c.style.setProperty('--sy', sy + 'px');
+      c.style.animation = `scatter 1.2s ease-in-out ${i * 0.05}s forwards`;
+    });
+  }
+
+  phaseIdx = (phaseIdx + 1) % PHASES.length;
+  setTimeout(runPhase, dur);
+}
+
+/* ── 폰트 로드 후 시작 ── */
+document.fonts.ready.then(() => {
+  tx = window.innerWidth  / 2 - moodEl.offsetWidth  / 2;
+  ty = window.innerHeight / 2 - moodEl.offsetHeight / 2;
+  moodEl.style.left = tx + 'px';
+  moodEl.style.top  = ty + 'px';
+
+  animateText();
+  setTimeout(runPhase, 400);
+});
+
+/* ══════════════════════════════════════════════════
+   NAVIGATION
+══════════════════════════════════════════════════ */
+let currentAlbum  = null;
+let currentGenre  = 'pop';
+let currentSong   = null;
+
+function selectAlbum(albumId) {
+  currentAlbum = albumId;
+  const meta = ALBUM_META[albumId];
+  currentGenre = meta.defaultGenre;
+
+  // 페이지 전환
+  document.getElementById('page-landing').style.display = 'none';
+  const recPage = document.getElementById('page-recommend');
+  recPage.style.display = 'flex';
+  requestAnimationFrame(() => recPage.classList.add('visible'));
+
+  // 서브타이틀
+  document.getElementById('rec-subtitle').textContent = meta.subtitle;
+
+  // 장르 탭 활성화
+  document.querySelectorAll('.genre-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.genre === currentGenre);
+  });
+
+  renderSongList(currentGenre);
+  playRandomSong();
+}
+
+function goBack() {
+  const recPage = document.getElementById('page-recommend');
+  recPage.classList.remove('visible');
+  setTimeout(() => {
+    recPage.style.display = 'none';
+    document.getElementById('page-landing').style.display = 'flex';
+  }, 380);
+
+  document.getElementById('spotify-player').src = '';
+  document.getElementById('vinyl').classList.add('paused');
+}
+
+/* ══════════════════════════════════════════════════
+   GENRE SWITCH
+══════════════════════════════════════════════════ */
+function switchGenre(tabEl) {
+  currentGenre = tabEl.dataset.genre;
+  document.querySelectorAll('.genre-tab').forEach(b => b.classList.remove('active'));
+  tabEl.classList.add('active');
+  renderSongList(currentGenre);
+}
+
+function renderSongList(genre) {
+  const list = document.getElementById('song-list');
+  list.innerHTML = (SONGS[genre] || []).map((s, i) => `
+    <div class="song-item ${currentSong?.title === s.title ? 'is-playing' : ''}"
+         onclick='playSong(${JSON.stringify(s)})'>
+      <div class="song-num">
+        <span class="s-num-txt">${i + 1}</span>
+      </div>
+      <div class="song-details">
+        <div class="s-name">${s.title}</div>
+        <div class="s-year">NewJeans · ${s.year}</div>
+      </div>
+      <span class="s-play-icon">▶</span>
+    </div>
+  `).join('');
+}
+
+/* ══════════════════════════════════════════════════
+   MUSIC PLAYER
+══════════════════════════════════════════════════ */
+function playRandomSong() {
+  // 전체 곡 목록에서 랜덤 선택 (현재 곡 제외)
+  const all = Object.values(SONGS).flat();
+  const filtered = all.filter(s => !currentSong || s.title !== currentSong.title);
+  const pick = filtered[Math.floor(Math.random() * filtered.length)];
+  playSong(pick);
+}
+
+function playSong(song) {
+  currentSong = song;
+
+  // Now Playing UI 업데이트
+  document.getElementById('np-title').textContent = song.title;
+
+  // 장르 라벨 찾기
+  for (const [g, list] of Object.entries(SONGS)) {
+    if (list.some(s => s.title === song.title)) {
+      document.getElementById('np-genre-label').textContent = GENRE_LABELS[g] || g;
+      break;
+    }
+  }
+
+  const sp    = document.getElementById('spotify-player');
+  const vinyl = document.getElementById('vinyl');
+  sp.src = `https://open.spotify.com/embed/track/${song.spId}?utm_source=generator&theme=0&autoplay=1`;
+  vinyl.classList.remove('paused');
+
+  renderSongList(currentGenre);
+}
+</script>
+</body>
+</html>
